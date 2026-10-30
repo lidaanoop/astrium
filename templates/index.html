@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Astrium Estates</title>
+    <meta
+      name="description"
+      content="Luxury homes, investment property, and expert property guidance."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="container nav">
+        <div class="brand" aria-label="Astrium Estates home">
+          <span class="brand-mark">A</span>
+          <span>Astrium</span>
+        </div>
+
+        <nav aria-label="Main navigation">
+          <a href="#home">Home</a>
+          <a href="#properties">Properties</a>
+          <a href="#about">About</a>
+          <a href="#services">Services</a>
+          <a href="#contact">Contact</a>
+        </nav>
+
+        <a class="btn btn-primary" href="#contact">Book a Viewing</a>
+      </div>
+    </header>
+
+    <main>
+      <section id="home" class="hero">
+        <div class="hero-overlay"></div>
+        <div class="container hero-inner">
+          <div class="hero-copy">
+            <p class="eyebrow">Luxury Property Specialists</p>
+            <h1>Find your place in the world.</h1>
+            <p class="lead">
+              Discover exceptional homes, investment opportunities, and tailored
+              advice for a life well lived.
+            </p>
+
+            <div class="hero-actions">
+              <a class="btn btn-primary" href="#properties">Explore Properties</a>
+              <a class="btn btn-secondary" href="#about">Learn More</a>
+            </div>
+          </div>
+
+          <aside class="hero-card" aria-label="Featured listing">
+            <p class="card-label">Featured Listing</p>
+            <h3>Seascape Residence</h3>
+            <p>4 Bed | 3 Bath | 2,800 sq ft</p>
+            <div class="price-row">
+              <span class="price">£1,250,000</span>
+            </div>
+            <ul>
+              <li>Ocean views</li>
+              <li>Private terrace</li>
+              <li>Smart home setup</li>
+            </ul>
+          </aside>
+        </div>
+      </section>
+
+      <section class="stats">
+        <div class="container stats-grid" aria-label="Company statistics">
+          <div>
+            <strong>15+</strong>
+            <span>Years of experience</span>
+          </div>
+          <div>
+            <strong>320</strong>
+            <span>Properties sold</span>
+          </div>
+          <div>
+            <strong>98%</strong>
+            <span>Client satisfaction</span>
+          </div>
+          <div>
+            <strong>24/7</strong>
+            <span>Dedicated support</span>
+          </div>
+        </div>
+      </section>
+
+      <section id="properties" class="section">
+        <div class="container">
+          <div class="section-heading">
+            <p class="eyebrow eyebrow-dark">Featured Collection</p>
+            <h2>Exceptional homes for modern living</h2>
+          </div>
+
+          <div class="property-grid">
+            <article class="property-card">
+              <img
+                src="https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=900&q=80"
+                alt="Luxury villa with pool"
+              />
+              <div class="property-body">
+                <div class="property-topline">
+                  <span>Villa</span>
+                  <span>£2,450,000</span>
+                </div>
+                <h3>Harbor View Villa</h3>
+                <p>
+                  Situated on a private coastal edge with panoramic sea views and
+                  landscaped gardens.
+                </p>
+                <ul>
+                  <li>5 Beds</li>
+                  <li>4 Baths</li>
+                  <li>Pool</li>
+                </ul>
+              </div>
+            </article>
+
+            <article class="property-card">
+              <img
+                src="https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=900&q=80"
+                alt="Contemporary home exterior"
+              />
+              <div class="property-body">
+                <div class="property-topline">
+                  <span>Townhouse</span>
+                  <span>£1,120,000</span>
+                </div>
+                <h3>Oakwell Residence</h3>
+                <p>
+                  Elegant interiors, open-plan living, and bespoke finishes for
+                  elevated family comfort.
+                </p>
+                <ul>
+                  <li>4 Beds</li>
+                  <li>3 Baths</li>
+                  <li>Garage</li>
+                </ul>
+              </div>
+            </article>
+
+            <article class="property-card">
+              <img
+                src="https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=900&q=80"
+                alt="Luxury apartment exterior"
+              />
+              <div class="property-body">
+                <div class="property-topline">
+                  <span>Apartment</span>
+                  <span>£840,000</span>
+                </div>
+                <h3>City Crest</h3>
+                <p>
+                  Modern apartment living in a prestigious downtown address with
+                  premium amenities.
+                </p>
+                <ul>
+                  <li>3 Beds</li>
+                  <li>2 Baths</li>
+                  <li>Roof terrace</li>
+                </ul>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="about" class="section about">
+        <div class="container about-grid">
+          <div class="about-image">
+            <img
+              src="https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=1000&q=80"
+              alt="Luxury home exterior"
+            />
+          </div>
+
+          <div class="about-content">
+            <p class="eyebrow eyebrow-dark">Why Choose Us</p>
+            <h2>Trusted guidance in property acquisition and investment</h2>
+            <p>
+              We combine market expertise, strategic understanding, and personal
+              attention to help you secure the right opportunity—whether you're
+              buying, selling, or investing.
+            </p>
+
+            <div class="feature-list">
+              <div>
+                <strong>Local Expertise</strong>
+                <p>
+                  In-depth knowledge of neighborhoods, pricing trends, and future
+                  growth.
+                </p>
+              </div>
+              <div>
+                <strong>Tailored Advice</strong>
+                <p>
+                  Personalized strategies built around your goals and lifestyle
+                  needs.
+                </p>
+              </div>
+              <div>
+                <strong>End-to-End Support</strong>
+                <p>
+                  From initial consultation to final handover, we guide every step.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="services" class="section services">
+        <div class="container">
+          <div class="section-heading">
+            <p class="eyebrow eyebrow-dark">Our Services</p>
+            <h2>Everything you need to move forward with confidence</h2>
+          </div>
+
+          <div class="services-grid">
+            <div class="service-card">
+              <h3>Buying</h3>
+              <p>
+                Access property options matched to your budget, lifestyle, and
+                long-term plans.
+              </p>
+            </div>
+            <div class="service-card">
+              <h3>Selling</h3>
+              <p>
+                Maximize value with expert pricing, staging support, and premium
+                marketing.
+              </p>
+            </div>
+            <div class="service-card">
+              <h3>Investment</h3>
+              <p>
+                Identify lucrative opportunities backed by informed and data-led
+                analysis.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="testimonial">
+        <div class="container">
+          <blockquote>
+            “The team understood exactly what we wanted and delivered a seamless
+            experience from start to finish.”
+          </blockquote>
+          <p>— Amelia &amp; James, Home Buyers</p>
+        </div>
+      </section>
+
+      <section id="contact" class="section cta-section">
+        <div class="container cta-box">
+          <div>
+            <p class="eyebrow eyebrow-dark">Start Your Search</p>
+            <h2>Let’s find the right property for you.</h2>
+          </div>
+          <a class="btn btn-primary" href="mailto:hello@astriumestates.com"
+            >Contact Us</a
+          >
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="container footer-inner">
+        <div class="brand footer-brand">
+          <span class="brand-mark">A</span>
+          <span>Astrium</span>
+        </div>
+        <p>© 2026 Astrium Estates</p>
+        <div class="footer-links">
+          <a href="#properties">Properties</a>
+          <a href="#about">About</a>
+          <a href="#contact">Contact</a>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>
