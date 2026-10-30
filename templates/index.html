@@ -14,7 +14,8 @@
       href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css', v='2') }}" />
+    <script src="{{ url_for('static', filename='main.js', v='2') }}" defer></script>
   </head>
   <body>
     <header class="topbar">
@@ -37,37 +38,269 @@
     </header>
 
     <main>
-      <section id="home" class="hero">
-        <div class="hero-overlay"></div>
-        <div class="container hero-inner">
-          <div class="hero-copy">
-            <p class="eyebrow">Luxury Property Specialists</p>
-            <h1>Find your place in the world.</h1>
-            <p class="lead">
-              Discover exceptional homes, investment opportunities, and tailored
-              advice for a life well lived.
-            </p>
+      <section
+        id="home"
+        class="hero"
+        aria-roledescription="carousel"
+        aria-label="Featured properties"
+      >
+        <div class="hero-slides">
+          <article
+            class="hero-slide is-active"
+            aria-roledescription="slide"
+            aria-label="1 of 3"
+          >
+            <video
+              class="hero-video"
+              autoplay
+              muted
+              loop
+              playsinline
+              preload="auto"
+              poster="{{ url_for('static', filename='images/poster-1.jpg') }}"
+            >
+              <source
+                src="{{ url_for('static', filename='videos/estate-exterior.mp4') }}"
+                type="video/mp4"
+              />
+            </video>
+            <div class="hero-overlay"></div>
 
-            <div class="hero-actions">
-              <a class="btn btn-primary" href="#properties">Explore Properties</a>
-              <a class="btn btn-secondary" href="#about">Learn More</a>
+            <div class="container hero-inner">
+              <div class="hero-copy">
+                <p class="eyebrow">Luxury Property Specialists</p>
+                <h1>Find your place in the world.</h1>
+                <p class="lead">
+                  Discover exceptional homes, investment opportunities, and
+                  tailored advice for a life well lived.
+                </p>
+
+                <div class="hero-actions">
+                  <a class="btn btn-primary" href="#properties"
+                    >Explore Properties</a
+                  >
+                  <a class="btn btn-secondary" href="#about">Learn More</a>
+                </div>
+              </div>
+
+              <aside class="hero-card" aria-label="Featured listing">
+                <p class="card-label">Featured Listing</p>
+                <h3>Seascape Residence</h3>
+                <p>4 Bed | 3 Bath | 2,800 sq ft</p>
+                <div class="price-row">
+                  <span class="price">£1,250,000</span>
+                </div>
+                <ul>
+                  <li>Ocean views</li>
+                  <li>Private terrace</li>
+                  <li>Smart home setup</li>
+                </ul>
+              </aside>
             </div>
+          </article>
+
+          <article
+            class="hero-slide"
+            aria-roledescription="slide"
+            aria-label="2 of 3"
+          >
+            <video
+              class="hero-video"
+              muted
+              loop
+              playsinline
+              preload="none"
+              poster="{{ url_for('static', filename='images/poster-2.jpg') }}"
+            >
+              <source
+                src="{{ url_for('static', filename='videos/estate-interior.mp4') }}"
+                type="video/mp4"
+              />
+            </video>
+            <div class="hero-overlay"></div>
+
+            <div class="container hero-inner">
+              <div class="hero-copy">
+                <p class="eyebrow">Bespoke Interiors</p>
+                <h2>Spaces designed around you.</h2>
+                <p class="lead">
+                  Light-filled rooms, considered materials, and finishes chosen
+                  with the same care you would choose for your own home.
+                </p>
+
+                <div class="hero-actions">
+                  <a class="btn btn-primary" href="#properties"
+                    >View Collection</a
+                  >
+                  <a class="btn btn-secondary" href="#services">Our Services</a>
+                </div>
+              </div>
+
+              <aside class="hero-card" aria-label="Featured listing">
+                <p class="card-label">Featured Listing</p>
+                <h3>Oakwell Residence</h3>
+                <p>4 Bed | 3 Bath | 2,100 sq ft</p>
+                <div class="price-row">
+                  <span class="price">£1,120,000</span>
+                </div>
+                <ul>
+                  <li>Open-plan living</li>
+                  <li>Bespoke kitchen</li>
+                  <li>Private garden</li>
+                </ul>
+              </aside>
+            </div>
+          </article>
+
+          <article
+            class="hero-slide"
+            aria-roledescription="slide"
+            aria-label="3 of 3"
+          >
+            <video
+              class="hero-video"
+              muted
+              loop
+              playsinline
+              preload="none"
+              poster="{{ url_for('static', filename='images/poster-3.jpg') }}"
+            >
+              <source
+                src="{{ url_for('static', filename='videos/estate-terrace.mp4') }}"
+                type="video/mp4"
+              />
+            </video>
+            <div class="hero-overlay"></div>
+
+            <div class="container hero-inner">
+              <div class="hero-copy">
+                <p class="eyebrow">Coastal &amp; Country Homes</p>
+                <h2>Evenings that feel like an escape.</h2>
+                <p class="lead">
+                  Terraces, pools, and long views — homes made for slow mornings
+                  and gatherings that run late.
+                </p>
+
+                <div class="hero-actions">
+                  <a class="btn btn-primary" href="#properties"
+                    >Browse Homes</a
+                  >
+                  <a class="btn btn-secondary" href="#contact"
+                    >Book a Viewing</a
+                  >
+                </div>
+              </div>
+
+              <aside class="hero-card" aria-label="Featured listing">
+                <p class="card-label">Featured Listing</p>
+                <h3>Harbor View Villa</h3>
+                <p>5 Bed | 4 Bath | 3,400 sq ft</p>
+                <div class="price-row">
+                  <span class="price">£2,450,000</span>
+                </div>
+                <ul>
+                  <li>Panoramic sea views</li>
+                  <li>Pool &amp; terrace</li>
+                  <li>Landscaped gardens</li>
+                </ul>
+              </aside>
+            </div>
+          </article>
+        </div>
+
+        <div class="hero-controls container">
+          <button
+            class="hero-nav"
+            type="button"
+            data-dir="prev"
+            aria-label="Previous slide"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path
+                d="M15 5l-7 7 7 7"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+
+          <div class="hero-dots" role="tablist" aria-label="Choose slide">
+            <button
+              class="hero-dot is-active"
+              type="button"
+              role="tab"
+              aria-selected="true"
+              aria-label="Go to slide 1"
+            ></button>
+            <button
+              class="hero-dot"
+              type="button"
+              role="tab"
+              aria-selected="false"
+              aria-label="Go to slide 2"
+            ></button>
+            <button
+              class="hero-dot"
+              type="button"
+              role="tab"
+              aria-selected="false"
+              aria-label="Go to slide 3"
+            ></button>
           </div>
 
-          <aside class="hero-card" aria-label="Featured listing">
-            <p class="card-label">Featured Listing</p>
-            <h3>Seascape Residence</h3>
-            <p>4 Bed | 3 Bath | 2,800 sq ft</p>
-            <div class="price-row">
-              <span class="price">£1,250,000</span>
-            </div>
-            <ul>
-              <li>Ocean views</li>
-              <li>Private terrace</li>
-              <li>Smart home setup</li>
-            </ul>
-          </aside>
+          <button
+            class="hero-nav"
+            type="button"
+            data-dir="next"
+            aria-label="Next slide"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path
+                d="M9 5l7 7-7 7"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+
+          <button
+            class="hero-toggle"
+            type="button"
+            aria-label="Pause slideshow"
+            aria-pressed="false"
+          >
+            <svg
+              class="icon-pause"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <path d="M8 5h3v14H8zM13 5h3v14h-3z" fill="currentColor" />
+            </svg>
+            <svg
+              class="icon-play"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <path d="M8 5l11 7-11 7z" fill="currentColor" />
+            </svg>
+          </button>
+
+          <p class="hero-count" aria-hidden="true">
+            <span data-current>01</span>
+            <span class="hero-count-sep">/</span>
+            <span>03</span>
+          </p>
         </div>
+
+        <div class="hero-progress" aria-hidden="true"><span></span></div>
       </section>
 
       <section class="stats">
