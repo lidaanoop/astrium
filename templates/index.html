@@ -48,7 +48,7 @@
           <article
             class="hero-slide is-active"
             aria-roledescription="slide"
-            aria-label="1 of 3"
+            aria-label="1 of 4"
           >
             <video
               class="hero-video"
@@ -102,7 +102,7 @@
           <article
             class="hero-slide"
             aria-roledescription="slide"
-            aria-label="2 of 3"
+            aria-label="2 of 4"
           >
             <video
               class="hero-video"
@@ -155,7 +155,7 @@
           <article
             class="hero-slide"
             aria-roledescription="slide"
-            aria-label="3 of 3"
+            aria-label="3 of 4"
           >
             <video
               class="hero-video"
@@ -206,6 +206,56 @@
               </aside>
             </div>
           </article>
+
+          <article
+            class="hero-slide"
+            aria-roledescription="slide"
+            aria-label="4 of 4"
+          >
+            <video
+              class="hero-video"
+              muted
+              loop
+              playsinline
+              preload="none"
+              poster="{{ url_for('static', filename='images/poster-4.jpg') }}"
+            >
+              <source
+                src="{{ url_for('static', filename='videos/estate-garden.mp4') }}"
+                type="video/mp4"
+              />
+            </video>
+            <div class="hero-overlay"></div>
+
+            <div class="container hero-inner">
+              <div class="hero-copy">
+                <p class="eyebrow">The Astrium Lifestyle</p>
+                <h2>A slower rhythm, close to home.</h2>
+                <p class="lead">
+                  Green space, quiet streets, and room to breathe — the everyday
+                  details that make a house feel like yours.
+                </p>
+
+                <div class="hero-actions">
+                  <a class="btn btn-primary" href="#properties"
+                    >Find Your Home</a
+                  >
+                  <a class="btn btn-secondary" href="#contact">Talk To Us</a>
+                </div>
+              </div>
+
+              <aside class="hero-card" aria-label="Client services">
+                <p class="card-label">Signature Service</p>
+                <h3>Private Client Care</h3>
+                <p>Independent guidance, start to finish</p>
+                <ul>
+                  <li>Private viewings</li>
+                  <li>Market valuations</li>
+                  <li>Dedicated advisor</li>
+                </ul>
+              </aside>
+            </div>
+          </article>
         </div>
 
         <div class="hero-controls container">
@@ -248,6 +298,13 @@
               role="tab"
               aria-selected="false"
               aria-label="Go to slide 3"
+            ></button>
+            <button
+              class="hero-dot"
+              type="button"
+              role="tab"
+              aria-selected="false"
+              aria-label="Go to slide 4"
             ></button>
           </div>
 
@@ -296,7 +353,7 @@
           <p class="hero-count" aria-hidden="true">
             <span data-current>01</span>
             <span class="hero-count-sep">/</span>
-            <span>03</span>
+            <span>04</span>
           </p>
         </div>
 
