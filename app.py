@@ -3,6 +3,7 @@ import functools
 import hashlib
 import hmac
 import json
+import logging
 import os
 import re
 import secrets
@@ -26,6 +27,28 @@ app = Flask(__name__)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CHECKINS_FILE = os.path.join(BASE_DIR, "checkins.json")
+
+
+def load_env_file(path: str) -> None:
+    """Load KEY=VALUE pairs from a local .env file without overriding real env vars."""
+    if not os.path.exists(path):
+        return
+    try:
+        with open(path, encoding="utf-8") as handle:
+            for raw_line in handle:
+                line = raw_line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                key, _, value = line.partition("=")
+                key = key.strip()
+                value = value.strip().strip("\"").strip("'")
+                if key:
+                    os.environ.setdefault(key, value)
+    except OSError:
+        app.logger.warning("Could not read %s", path)
+
+
+load_env_file(os.path.join(BASE_DIR, ".env"))
 
 PHONE_RE = re.compile(r"^[6-9]\d{9}$")
 
@@ -88,6 +111,11 @@ def load_secret_key() -> str:
 
 
 app.secret_key = load_secret_key()
+
+# The hero videos loop continuously and flood the console with range requests.
+# Per-request access logs are off by default; set LOG_REQUESTS=1 to see them.
+if os.environ.get("LOG_REQUESTS", "0").strip().lower() not in {"1", "true", "yes"}:
+    logging.getLogger("werkzeug").setLevel(logging.WARNING)
 
 # Verhoeff algorithm tables — used to validate the Aadhaar checksum digit.
 VERHOEFF_D = [
@@ -659,6 +687,18 @@ def admin_delete_checkin(reference: str):
         flash(f"Check-in {reference} was deleted.", "success")
 
     return redirect(url_for("admin_dashboard"))
+
+
+# Announce the OTP delivery mode at startup so it is obvious whether real SMS
+# will be sent or the code is only shown in the browser.
+if sms_configured():
+    app.logger.info("Aadhaar OTP SMS delivery enabled via %s.", SMS_PROVIDER)
+else:
+    app.logger.warning(
+        "Aadhaar OTP delivery is in DEMO mode: no SMS is sent. Add "
+        "SMS_PROVIDER and its credentials to .env (see .env.example) and "
+        "restart the server to text real OTPs."
+    )
 
 
 if __name__ == "__main__":

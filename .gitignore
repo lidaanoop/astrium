@@ -9,3 +9,6 @@ checkins.json
 
 # Generated Flask session signing key
 .secret_key
+
+# Local credentials (SMS gateway, admin login, secret key)
+.env

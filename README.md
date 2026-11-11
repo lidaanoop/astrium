@@ -40,28 +40,26 @@ OTP issued in one session cannot be redeemed from another.
 ### Demo mode vs real SMS
 
 The app ships without an SMS gateway, so **no SMS is sent** and the OTP is shown
-in the form as a “Demo mode” hint (and written to the server log). To deliver
-real OTPs set `SMS_PROVIDER` and that provider’s credentials before starting the
-app — the `/api/aadhaar/send-otp` endpoint then texts the code to the phone
-number entered in the form:
+in the form as a “Demo mode” hint (and written to the server log). The server
+prints this at startup so the mode is never ambiguous:
 
-```bash
-# India, cheapest and simplest
-export SMS_PROVIDER=fast2sms
-export FAST2SMS_API_KEY=your-key
-export SMS_SENDER_ID=ASTRIM
-
-# or MSG91 (needs a DLT-approved flow template whose variable is named OTP)
-export SMS_PROVIDER=msg91
-export MSG91_AUTH_KEY=your-key
-export MSG91_TEMPLATE_ID=your-template-id
-
-# or Twilio
-export SMS_PROVIDER=twilio
-export TWILIO_ACCOUNT_SID=ACxxxxxxxx
-export TWILIO_AUTH_TOKEN=your-token
-export TWILIO_FROM_NUMBER=+1xxxxxxxxxx
 ```
+WARNING in app: Aadhaar OTP delivery is in DEMO mode: no SMS is sent. ...
+```
+
+To deliver real OTPs, copy `.env.example` to `.env`, fill in a provider, and
+restart the app (`.env` is loaded automatically and is git-ignored):
+
+```ini
+# .env — Fast2SMS example
+SMS_PROVIDER=fast2sms
+FAST2SMS_API_KEY=your-key
+SMS_SENDER_ID=ASTRIM
+```
+
+Also supported: `SMS_PROVIDER=msg91` (`MSG91_AUTH_KEY`, `MSG91_TEMPLATE_ID`) and
+`SMS_PROVIDER=twilio` (`TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`,
+`TWILIO_FROM_NUMBER`). Environment variables take precedence over `.env`.
 
 When a gateway is configured the response reports `delivery: "sms"`, and if the
 gateway rejects the message the endpoint returns `502` so the guest sees an error
