@@ -697,6 +697,23 @@ h3 {
   gap: 20px;
 }
 
+@media (max-width: 1100px) {
+  nav {
+    gap: 18px;
+    font-size: 0.9rem;
+  }
+
+  .nav-actions {
+    gap: 8px;
+  }
+
+  .nav-actions .btn {
+    min-height: 44px;
+    padding: 0 16px;
+    font-size: 0.9rem;
+  }
+}
+
 @media (max-width: 900px) {
   nav {
     display: none;
@@ -1126,71 +1143,85 @@ body.modal-open {
   color: #c0523f;
 }
 
-.file-drop {
-  position: relative;
+.otp-panel {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px dashed rgba(31, 42, 55, 0.24);
+  border-radius: 14px;
+  background: rgba(255, 253, 249, 0.92);
+}
+
+.otp-panel[hidden] {
+  display: none;
+}
+
+.otp-panel:not([hidden]) {
+  animation: otp-in 0.25s ease;
+}
+
+@keyframes otp-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.otp-demo {
+  margin: 0;
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: rgba(185, 139, 93, 0.18);
+  color: #7a5a35;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  overflow-wrap: anywhere;
+}
+
+.otp-meta {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
-  border: 1.5px dashed rgba(31, 42, 55, 0.24);
-  border-radius: 14px;
-  background: #fff;
-  cursor: pointer;
-  transition: border-color 0.2s ease, background 0.2s ease;
+  justify-content: space-between;
+  gap: 10px 14px;
+  flex-wrap: wrap;
+  margin: 0;
 }
 
-.file-drop:hover,
-.file-drop:focus-within {
-  border-color: var(--accent);
-  background: rgba(185, 139, 93, 0.06);
-}
-
-.file-drop.is-invalid {
-  border-color: #c0523f;
-}
-
-.file-drop input[type="file"] {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  width: 100%;
-  height: 100%;
-  cursor: pointer;
-}
-
-.file-drop__icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  background: var(--primary-soft);
-  color: var(--primary);
-}
-
-.file-drop__icon svg {
-  width: 18px;
-  height: 18px;
-}
-
-.file-drop__text {
-  display: grid;
-  gap: 2px;
+.otp-hint {
+  flex: 1 1 220px;
   min-width: 0;
-}
-
-.file-drop__text strong {
-  font-size: 0.92rem;
-  font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.file-drop__text small {
-  color: var(--muted);
   font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.otp-resend {
+  flex: none;
+  padding: 7px 13px;
+  border: 1px solid rgba(31, 42, 55, 0.2);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--primary);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.otp-resend:not(:disabled):hover {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: #fff;
+}
+
+.otp-resend:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .stay-summary {
@@ -1286,6 +1317,11 @@ body.modal-open {
 
   .form-row {
     grid-template-columns: 1fr;
+  }
+
+  .otp-meta {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .form-actions {

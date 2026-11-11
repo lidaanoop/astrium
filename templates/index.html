@@ -690,12 +690,8 @@
                   aria-describedby="aadhaar-status"
                   required
                 />
-                <button
-                  class="btn-verify"
-                  type="button"
-                  id="verify-aadhaar"
-                >
-                  Verify
+                <button class="btn-verify" type="button" id="send-otp">
+                  Send OTP
                 </button>
               </div>
               <p
@@ -707,33 +703,42 @@
               <p class="field-error" data-error-for="aadhaar"></p>
             </div>
 
-            <div class="field">
-              <label for="checkin-aadhaar-file">Upload Aadhaar copy</label>
-              <label class="file-drop" for="checkin-aadhaar-file">
-                <span class="file-drop__icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" focusable="false">
-                    <path
-                      d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 16v2.5A1.5 1.5 0 006.5 20h11a1.5 1.5 0 001.5-1.5V16"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="1.7"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
+            <div class="otp-panel" id="otp-panel" hidden>
+              <p class="otp-demo" data-demo-otp hidden></p>
+
+              <div class="field">
+                <label for="checkin-otp">One-time password</label>
+                <div class="aadhaar-input">
+                  <input
+                    id="checkin-otp"
+                    name="otp"
+                    type="text"
+                    inputmode="numeric"
+                    maxlength="6"
+                    autocomplete="one-time-code"
+                    placeholder="6-digit OTP"
+                  />
+                  <button class="btn-verify" type="button" id="verify-otp">
+                    Verify OTP
+                  </button>
+                </div>
+                <p
+                  class="verify-status"
+                  id="otp-status"
+                  role="status"
+                  aria-live="polite"
+                ></p>
+                <p class="field-error" data-error-for="otp"></p>
+              </div>
+
+              <div class="otp-meta">
+                <span id="otp-hint" class="otp-hint">
+                  OTP is sent to the mobile number registered with Aadhaar.
                 </span>
-                <span class="file-drop__text">
-                  <strong data-file-name>Choose a file</strong>
-                  <small>JPG, PNG or PDF &middot; up to 5 MB</small>
-                </span>
-                <input
-                  id="checkin-aadhaar-file"
-                  name="aadhaar_file"
-                  type="file"
-                  accept="image/png,image/jpeg,application/pdf"
-                />
-              </label>
-              <p class="field-error" data-error-for="aadhaar_file"></p>
+                <button class="otp-resend" type="button" id="resend-otp" disabled>
+                  Resend OTP in 30s
+                </button>
+              </div>
             </div>
           </fieldset>
 

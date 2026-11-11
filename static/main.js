@@ -240,16 +240,21 @@
   const formError = modal.querySelector("[data-form-error]");
   const staySummary = modal.querySelector("[data-stay-summary]");
   const aadhaarStatus = document.getElementById("aadhaar-status");
-  const verifyBtn = document.getElementById("verify-aadhaar");
-  const fileName = modal.querySelector("[data-file-name]");
-  const fileDrop = modal.querySelector(".file-drop");
+  const sendOtpBtn = document.getElementById("send-otp");
+  const otpPanel = document.getElementById("otp-panel");
+  const otpInput = document.getElementById("checkin-otp");
+  const otpStatus = document.getElementById("otp-status");
+  const otpHint = document.getElementById("otp-hint");
+  const demoOtp = modal.querySelector("[data-demo-otp]");
+  const verifyOtpBtn = document.getElementById("verify-otp");
+  const resendBtn = document.getElementById("resend-otp");
 
   const fields = {
     name: document.getElementById("checkin-name"),
     phone: document.getElementById("checkin-phone"),
     address: document.getElementById("checkin-address"),
     aadhaar: document.getElementById("checkin-aadhaar"),
-    file: document.getElementById("checkin-aadhaar-file"),
+    otp: otpInput,
     checkIn: document.getElementById("checkin-date"),
     checkOut: document.getElementById("checkout-date"),
   };
@@ -301,76 +306,261 @@
     return "";
   }
 
+  let otpRequestId = null;
   let aadhaarVerified = false;
+  let verifiedAadhaar = "";
+  let resendTimer = null;
 
-  function setVerifyStatus(message, state) {
-    aadhaarStatus.textContent = message;
-    aadhaarStatus.classList.toggle("is-valid", state === "valid");
-    aadhaarStatus.classList.toggle("is-invalid", state === "invalid");
+  function setStatus(node, message, state) {
+    if (!node) return;
+    node.textContent = message;
+    node.classList.toggle("is-valid", state === "valid");
+    node.classList.toggle("is-invalid", state === "invalid");
+  }
+
+  const setVerifyStatus = (message, state) =>
+    setStatus(aadhaarStatus, message, state);
+  const setOtpStatus = (message, state) => setStatus(otpStatus, message, state);
+
+  function stopResendTimer() {
+    if (resendTimer) window.clearInterval(resendTimer);
+    resendTimer = null;
+  }
+
+  function startResendTimer(seconds) {
+    stopResendTimer();
+    if (!resendBtn) return;
+
+    let remaining = Math.max(1, Math.round(seconds || 30));
+
+    const render = () => {
+      if (remaining <= 0) {
+        stopResendTimer();
+        resendBtn.disabled = false;
+        resendBtn.textContent = "Resend OTP";
+        return;
+      }
+
+      resendBtn.disabled = true;
+      resendBtn.textContent = `Resend OTP in ${remaining}s`;
+      remaining -= 1;
+    };
+
+    render();
+    resendTimer = window.setInterval(render, 1000);
+  }
+
+  function resetVerification() {
+    aadhaarVerified = false;
+    verifiedAadhaar = "";
+    otpRequestId = null;
+
+    stopResendTimer();
+
+    if (otpPanel) otpPanel.hidden = true;
+    if (otpInput) {
+      otpInput.value = "";
+      otpInput.disabled = false;
+    }
+    if (verifyOtpBtn) {
+      verifyOtpBtn.disabled = false;
+      verifyOtpBtn.textContent = "Verify OTP";
+    }
+    if (resendBtn) {
+      resendBtn.hidden = false;
+      resendBtn.disabled = true;
+      resendBtn.textContent = "Resend OTP in 30s";
+    }
+    if (demoOtp) {
+      demoOtp.hidden = true;
+      demoOtp.textContent = "";
+    }
+
+    setOtpStatus("", "");
+    clearError("otp");
   }
 
   fields.aadhaar.addEventListener("input", () => {
     const digits = aadhaarDigits().slice(0, 12);
     fields.aadhaar.value = (digits.match(/.{1,4}/g) || []).join(" ");
 
-    aadhaarVerified = false;
+    resetVerification();
     setVerifyStatus("", "");
     clearError("aadhaar");
   });
 
-  verifyBtn.addEventListener("click", () => {
+  async function requestOtp({ resend = false } = {}) {
     const problem = validateAadhaar();
     if (problem) {
-      aadhaarVerified = false;
       setVerifyStatus(problem, "invalid");
       showError("aadhaar", problem);
       return;
     }
 
-    verifyBtn.disabled = true;
-    verifyBtn.textContent = "Checking…";
-    setVerifyStatus("Verifying Aadhaar…", "");
+    const digits = aadhaarDigits();
+    const trigger = resend ? resendBtn : sendOtpBtn;
 
-    const pending = aadhaarDigits();
+    trigger.disabled = true;
+    trigger.textContent = "Sending…";
+    if (!resend) setVerifyStatus("Sending OTP…", "");
+    setOtpStatus("Sending a new OTP…", "");
 
-    // Simulated verification round-trip; the final check also runs server-side.
-    window.setTimeout(() => {
-      verifyBtn.disabled = false;
+    try {
+      const response = await fetch("/api/aadhaar/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ aadhaar: digits }),
+      });
 
-      if (aadhaarDigits() !== pending) {
-        verifyBtn.textContent = "Verify";
-        setVerifyStatus("Number changed — please verify again.", "invalid");
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok || !data.ok) {
+        const fieldError = data.errors && data.errors.aadhaar;
+        const message =
+          fieldError ||
+          data.message ||
+          "We could not send the OTP. Please try again.";
+
+        if (fieldError) {
+          showError("aadhaar", fieldError);
+          setVerifyStatus(fieldError, "invalid");
+        } else {
+          setOtpStatus(message, "invalid");
+          // Never leave the Aadhaar row stuck on "Sending OTP…".
+          setVerifyStatus(message, "invalid");
+        }
+
+        if (data.retry_after) startResendTimer(data.retry_after);
+        return;
+      }
+
+      otpRequestId = data.request_id;
+      aadhaarVerified = false;
+      verifiedAadhaar = "";
+
+      otpPanel.hidden = false;
+      otpInput.disabled = false;
+      otpInput.value = "";
+      clearError("otp");
+      verifyOtpBtn.disabled = false;
+      verifyOtpBtn.textContent = "Verify OTP";
+      resendBtn.hidden = false;
+
+      setVerifyStatus(
+        `OTP sent to the mobile linked with ${data.masked || "Aadhaar"}`,
+        "valid"
+      );
+      setOtpStatus("", "");
+
+      if (otpHint && data.expires_in) {
+        otpHint.textContent = `Valid for ${Math.round(
+          data.expires_in / 60
+        )} minutes. Sent to the mobile number registered with Aadhaar.`;
+      }
+
+      if (data.demo_otp && demoOtp) {
+        demoOtp.hidden = false;
+        demoOtp.textContent = `Demo mode: your OTP is ${data.demo_otp}`;
+      }
+
+      startResendTimer(data.resend_in);
+      otpInput.focus();
+    } catch (error) {
+      setVerifyStatus("Network error — please try again.", "invalid");
+    } finally {
+      if (!resend) {
+        sendOtpBtn.disabled = false;
+        sendOtpBtn.textContent = "Send OTP";
+      } else if (!resendTimer) {
+        resendBtn.disabled = false;
+        resendBtn.textContent = "Resend OTP";
+      }
+    }
+  }
+
+  async function submitOtp() {
+    const otp = otpInput.value.replace(/\D/g, "").slice(0, 6);
+    otpInput.value = otp;
+
+    if (!otpRequestId) {
+      setOtpStatus("Request an OTP first.", "invalid");
+      return;
+    }
+
+    if (otp.length !== 6) {
+      showError("otp", "Enter the 6-digit OTP.");
+      return;
+    }
+
+    verifyOtpBtn.disabled = true;
+    verifyOtpBtn.textContent = "Verifying…";
+    setOtpStatus("Checking OTP…", "");
+
+    try {
+      const response = await fetch("/api/aadhaar/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ request_id: otpRequestId, otp }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok || !data.ok) {
+        const message = data.message || "OTP verification failed.";
+        showError("otp", message);
+        setOtpStatus(message, "invalid");
+
+        if (data.expired || response.status === 429) {
+          otpRequestId = null;
+          stopResendTimer();
+          resendBtn.hidden = false;
+          resendBtn.disabled = false;
+          resendBtn.textContent = "Resend OTP";
+        }
         return;
       }
 
       aadhaarVerified = true;
-      verifyBtn.textContent = "Verified";
-      setVerifyStatus("Aadhaar number verified ✓", "valid");
+      verifiedAadhaar = aadhaarDigits();
+
       clearError("aadhaar");
-    }, 700);
+      clearError("otp");
+      otpInput.disabled = true;
+      verifyOtpBtn.disabled = true;
+      verifyOtpBtn.textContent = "Verified";
+      resendBtn.hidden = true;
+      if (demoOtp) demoOtp.hidden = true;
+
+      stopResendTimer();
+      setOtpStatus(
+        `Aadhaar ${data.aadhaar_masked || ""} verified via OTP ✓`,
+        "valid"
+      );
+      setVerifyStatus("Aadhaar verified via OTP ✓", "valid");
+    } catch (error) {
+      setOtpStatus("Network error — please try again.", "invalid");
+    } finally {
+      if (!aadhaarVerified) {
+        verifyOtpBtn.disabled = false;
+        verifyOtpBtn.textContent = "Verify OTP";
+      }
+    }
+  }
+
+  sendOtpBtn.addEventListener("click", () => requestOtp());
+  resendBtn.addEventListener("click", () => requestOtp({ resend: true }));
+  verifyOtpBtn.addEventListener("click", submitOtp);
+
+  otpInput.addEventListener("input", () => {
+    otpInput.value = otpInput.value.replace(/\D/g, "").slice(0, 6);
+    clearError("otp");
   });
 
-  /* ------------------------------------------------------------ file pick */
-
-  fields.file.addEventListener("change", () => {
-    const file = fields.file.files && fields.file.files[0];
-    if (!file) {
-      fileName.textContent = "Choose a file";
-      fileDrop.classList.remove("is-invalid");
-      return;
+  otpInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      submitOtp();
     }
-
-    if (file.size > 5 * 1024 * 1024) {
-      fields.file.value = "";
-      fileName.textContent = "Choose a file";
-      fileDrop.classList.add("is-invalid");
-      showError("aadhaar_file", "File is larger than 5 MB.");
-      return;
-    }
-
-    fileDrop.classList.remove("is-invalid");
-    clearError("aadhaar_file");
-    fileName.textContent = file.name;
   });
 
   /* ---------------------------------------------------------- date limits */
@@ -431,7 +621,7 @@
   /* ----------------------------------------------------------- validation */
 
   function errorNode(key) {
-    const map = { file: "aadhaar_file", checkIn: "check_in", checkOut: "check_out" };
+    const map = { checkIn: "check_in", checkOut: "check_out" };
     return modal.querySelector(`[data-error-for="${map[key] || key}"]`);
   }
 
@@ -478,8 +668,8 @@
     const aadhaarProblem = validateAadhaar();
     if (aadhaarProblem) {
       errors.aadhaar = aadhaarProblem;
-    } else if (!aadhaarVerified) {
-      errors.aadhaar = "Verify your Aadhaar number before checking in.";
+    } else if (!aadhaarVerified || verifiedAadhaar !== aadhaarDigits()) {
+      errors.aadhaar = "Verify your Aadhaar with the OTP before checking in.";
     }
 
     const todayIso = isoDate(startOfToday());
@@ -506,12 +696,8 @@
   function resetForm() {
     form.reset();
     clearAllErrors();
-    aadhaarVerified = false;
-    verifyBtn.disabled = false;
-    verifyBtn.textContent = "Verify";
+    resetVerification();
     setVerifyStatus("", "");
-    fileName.textContent = "Choose a file";
-    fileDrop.classList.remove("is-invalid");
     staySummary.hidden = true;
     staySummary.textContent = "";
     form.hidden = false;
@@ -604,7 +790,6 @@
       aadhaar: aadhaarDigits(),
       check_in: fields.checkIn.value,
       check_out: fields.checkOut.value,
-      aadhaar_file_name: fields.file.files[0] ? fields.file.files[0].name : "",
     };
 
     submitBtn.disabled = true;

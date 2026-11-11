@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Check-in dashboard · Astrium Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='admin.css') }}" />
+    <script src="{{ url_for('static', filename='admin.js') }}" defer></script>
+  </head>
+  <body class="admin-body">
+    <header class="admin-bar">
+      <div class="admin-bar__inner">
+        <a class="brand" href="{{ url_for('admin_dashboard') }}">
+          <span class="brand-mark">A</span>
+          <span>Astrium</span>
+        </a>
+
+        <div class="admin-bar__right">
+          <span class="admin-badge">Admin</span>
+          <span class="admin-user">{{ admin_user }}</span>
+          <form method="post" action="{{ url_for('admin_logout') }}">
+            <button class="btn btn-sm btn-outline-dark" type="submit">
+              Sign out
+            </button>
+          </form>
+        </div>
+      </div>
+    </header>
+
+    <main class="admin-main">
+      <div class="admin-heading">
+        <div>
+          <p class="eyebrow eyebrow-dark">Guest check-ins</p>
+          <h1>Check-in dashboard</h1>
+          <p>
+            Every check-in submitted from the website is stored here. Only
+            signed-in staff can open this page.
+          </p>
+        </div>
+
+        <a class="btn btn-sm btn-primary" href="{{ url_for('home') }}">
+          View website
+        </a>
+      </div>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+      <div class="flash-stack">
+        {% for category, message in messages %}
+        <p class="flash flash--{{ category }}" role="status">{{ message }}</p>
+        {% endfor %}
+      </div>
+      {% endif %}
+      {% endwith %}
+
+      <section class="admin-stats" aria-label="Check-in overview">
+        <article class="stat-card">
+          <strong>{{ stats.total }}</strong>
+          <span>Total check-ins</span>
+        </article>
+        <article class="stat-card">
+          <strong>{{ stats.in_house }}</strong>
+          <span>In house today</span>
+        </article>
+        <article class="stat-card">
+          <strong>{{ stats.upcoming }}</strong>
+          <span>Upcoming stays</span>
+        </article>
+        <article class="stat-card">
+          <strong>{{ stats.completed }}</strong>
+          <span>Completed stays</span>
+        </article>
+      </section>
+
+      <section class="admin-panel" aria-labelledby="records-title">
+        <h2 class="sr-only" id="records-title">Check-in records</h2>
+
+        {% if records %}
+        <div class="admin-toolbar">
+          <label class="search-field" for="checkin-search">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <circle
+                cx="11"
+                cy="11"
+                r="6.5"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+              />
+              <path
+                d="M16 16l4 4"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+              />
+            </svg>
+            <input
+              id="checkin-search"
+              type="search"
+              placeholder="Search name, phone, reference or address"
+            />
+          </label>
+
+          <div class="status-filter" role="group" aria-label="Filter by status">
+            <button class="chip is-active" type="button" data-filter="all">
+              All
+            </button>
+            <button class="chip" type="button" data-filter="In house">
+              In house
+            </button>
+            <button class="chip" type="button" data-filter="Upcoming">
+              Upcoming
+            </button>
+            <button class="chip" type="button" data-filter="Completed">
+              Completed
+            </button>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table class="admin-table" id="checkin-table">
+            <thead>
+              <tr>
+                <th scope="col">Reference</th>
+                <th scope="col">Guest</th>
+                <th scope="col">Contact</th>
+                <th scope="col">Aadhaar</th>
+                <th scope="col">Stay</th>
+                <th scope="col">Status</th>
+                <th scope="col">Submitted</th>
+                <th scope="col"><span class="sr-only">Actions</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for record in records %}
+              {% set badge = 'badge--in' if record.status == 'In house' else ('badge--up' if record.status == 'Upcoming' else 'badge--done') %}
+              <tr
+                data-status="{{ record.status }}"
+                data-search="{{ (record.name ~ ' ' ~ record.phone ~ ' ' ~ record.reference ~ ' ' ~ record.address) | lower }}"
+              >
+                <td data-label="Reference">
+                  <span class="ref">{{ record.reference }}</span>
+                </td>
+
+                <td data-label="Guest">
+                  <span class="cell-strong">{{ record.name }}</span>
+                  <span class="cell-sub">{{ record.address }}</span>
+                </td>
+
+                <td data-label="Contact">
+                  <span class="cell-strong">+91 {{ record.phone }}</span>
+                </td>
+
+                <td data-label="Aadhaar">
+                  <span class="cell-strong ref-mask">{{ record.aadhaar_masked }}</span>
+                  <span class="cell-sub">
+                    {% if record.aadhaar_verified %}OTP verified{% else %}Not verified{% endif %}
+                  </span>
+                </td>
+
+                <td data-label="Stay">
+                  <span class="cell-strong">
+                    {{ record.check_in_label }} &rarr; {{ record.check_out_label }}
+                  </span>
+                  <span class="cell-sub">
+                    {{ record.nights }} night{{ '' if record.nights == 1 else 's' }}
+                  </span>
+                </td>
+
+                <td data-label="Status">
+                  <span class="badge {{ badge }}">{{ record.status }}</span>
+                </td>
+
+                <td data-label="Submitted">
+                  <span class="cell-sub">{{ record.submitted_label }}</span>
+                </td>
+
+                <td data-label="Actions">
+                  <form
+                    method="post"
+                    action="{{ url_for('admin_delete_checkin', reference=record.reference) }}"
+                    data-confirm="Delete check-in {{ record.reference }} for {{ record.name }}?"
+                  >
+                    <button class="btn-delete" type="submit">Delete</button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <p class="table-empty" data-empty hidden>
+          No check-ins match this search.
+        </p>
+        {% else %}
+        <div class="empty-state">
+          <strong>No check-ins yet</strong>
+          <p>
+            Guest check-ins submitted from the website will appear here
+            automatically.
+          </p>
+        </div>
+        {% endif %}
+      </section>
+    </main>
+  </body>
+</html>

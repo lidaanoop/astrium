@@ -6,3 +6,6 @@ venv/
 
 # Guest check-in records contain personal data
 checkins.json
+
+# Generated Flask session signing key
+.secret_key
