@@ -1,3 +1,4 @@
+import base64
 import functools
 import hashlib
 import hmac
@@ -6,6 +7,8 @@ import os
 import re
 import secrets
 import time
+import urllib.parse
+import urllib.request
 from datetime import date, datetime, timezone
 
 from flask import (
@@ -42,6 +45,21 @@ OTP_TTL_SECONDS = 300
 OTP_RESEND_SECONDS = 30
 OTP_MAX_ATTEMPTS = 5
 VERIFICATION_TTL_SECONDS = 1800
+
+# SMS delivery. Set SMS_PROVIDER to "fast2sms", "msg91" or "twilio" and provide
+# that provider's credentials; otherwise no SMS is sent and the OTP is shown in
+# the form (demo mode) and written to the server log.
+SMS_PROVIDER = os.environ.get("SMS_PROVIDER", "").strip().lower()
+SMS_SENDER_ID = os.environ.get("SMS_SENDER_ID", "ASTRIM")
+
+FAST2SMS_API_KEY = os.environ.get("FAST2SMS_API_KEY", "").strip()
+
+MSG91_AUTH_KEY = os.environ.get("MSG91_AUTH_KEY", "").strip()
+MSG91_TEMPLATE_ID = os.environ.get("MSG91_TEMPLATE_ID", "").strip()
+
+TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_ACCOUNT_SID", "").strip()
+TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN", "").strip()
+TWILIO_FROM_NUMBER = os.environ.get("TWILIO_FROM_NUMBER", "").strip()
 
 # In-memory, per-session state. Swap for Redis/DB for multi-process deployments.
 OTP_STORE: dict = {}
@@ -203,14 +221,112 @@ def otp_digest(request_id: str, otp: str) -> str:
     ).hexdigest()
 
 
-def send_otp_sms(aadhaar: str, otp: str) -> None:
-    """Hook for a real SMS/UIDAI gateway.
+def sms_configured() -> bool:
+    """True when an SMS gateway is configured with usable credentials."""
+    if SMS_PROVIDER == "fast2sms":
+        return bool(FAST2SMS_API_KEY)
+    if SMS_PROVIDER == "msg91":
+        return bool(MSG91_AUTH_KEY and MSG91_TEMPLATE_ID)
+    if SMS_PROVIDER == "twilio":
+        return bool(TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN and TWILIO_FROM_NUMBER)
+    return False
 
-    Replace this with the provider call (e.g. Surepass, Karza, Digio). UIDAI
-    only sends the OTP to the mobile number registered against the Aadhaar, so
-    the provider — not this app — must own delivery.
+
+def _post(url: str, body: bytes, headers: dict):
+    request_obj = urllib.request.Request(url, data=body, headers=headers, method="POST")
+    with urllib.request.urlopen(request_obj, timeout=10) as response:
+        response.read()
+        return response.status
+
+
+def send_otp_sms(phone: str, otp: str) -> bool:
+    """Deliver the OTP by SMS. Returns True when the gateway accepted it.
+
+    `phone` is the 10-digit Indian mobile number collected in the form. For
+    UIDAI-issued Aadhaar OTPs (delivered only to the Aadhaar-linked mobile), swap
+    this for a UIDAI-approved provider such as Surepass, Karza or Digio.
     """
-    app.logger.info("Aadhaar OTP for %s: %s", mask_aadhaar(aadhaar), otp)
+    message = (
+        f"{otp} is your Astrium verification code. "
+        f"Valid for {OTP_TTL_SECONDS // 60} minutes. Do not share it with anyone."
+    )
+
+    if not sms_configured():
+        app.logger.warning(
+            "SMS gateway not configured - OTP for +91%s is %s (demo mode)", phone, otp
+        )
+        return False
+
+    try:
+        if SMS_PROVIDER == "fast2sms":
+            body = urllib.parse.urlencode(
+                {
+                    "route": "q",
+                    "sender_id": SMS_SENDER_ID,
+                    "message": message,
+                    "language": "english",
+                    "flash": "0",
+                    "numbers": phone,
+                }
+            ).encode("utf-8")
+            status = _post(
+                "https://www.fast2sms.com/dev/bulkV2",
+                body,
+                {
+                    "authorization": FAST2SMS_API_KEY,
+                    "Content-Type": "application/x-www-form-urlencoded",
+                },
+            )
+
+        elif SMS_PROVIDER == "msg91":
+            body = json.dumps(
+                {
+                    "template_id": MSG91_TEMPLATE_ID,
+                    "short_url": "0",
+                    "recipients": [{"mobiles": f"91{phone}", "OTP": otp}],
+                }
+            ).encode("utf-8")
+            status = _post(
+                "https://control.msg91.com/api/v5/flow/",
+                body,
+                {"authkey": MSG91_AUTH_KEY, "Content-Type": "application/json"},
+            )
+
+        elif SMS_PROVIDER == "twilio":
+            body = urllib.parse.urlencode(
+                {
+                    "To": f"+91{phone}",
+                    "From": TWILIO_FROM_NUMBER,
+                    "Body": message,
+                }
+            ).encode("utf-8")
+            token = base64.b64encode(
+                f"{TWILIO_ACCOUNT_SID}:{TWILIO_AUTH_TOKEN}".encode("utf-8")
+            ).decode("ascii")
+            status = _post(
+                "https://api.twilio.com/2010-04-01/Accounts/"
+                f"{TWILIO_ACCOUNT_SID}/Messages.json",
+                body,
+                {
+                    "Authorization": f"Basic {token}",
+                    "Content-Type": "application/x-www-form-urlencoded",
+                },
+            )
+
+        else:
+            app.logger.error("Unknown SMS_PROVIDER: %s", SMS_PROVIDER)
+            return False
+
+    except Exception as exc:  # network/HTTP errors from the gateway
+        app.logger.error("SMS delivery via %s failed: %s", SMS_PROVIDER, exc)
+        return False
+
+    if 200 <= status < 300:
+        app.logger.info("OTP SMS accepted by %s for +91%s", SMS_PROVIDER, phone)
+        return True
+
+    app.logger.error("SMS gateway %s returned HTTP %s", SMS_PROVIDER, status)
+    return False
 
 
 def session_aadhaar_verified(aadhaar: str) -> bool:
@@ -270,13 +386,26 @@ def validate_checkin(payload: dict) -> dict:
 
 @app.route("/api/aadhaar/send-otp", methods=["POST"])
 def send_aadhaar_otp():
-    """Validate the Aadhaar number and send a 6-digit OTP to its mobile number."""
+    """Validate the Aadhaar number and send a 6-digit OTP by SMS."""
     payload = request.get_json(silent=True) or {}
     aadhaar = re.sub(r"\D", "", str(payload.get("aadhaar", "")))
+    phone = re.sub(r"\D", "", str(payload.get("phone", "")))
 
     problem = validate_aadhaar_number(aadhaar)
     if problem:
         return jsonify({"ok": False, "errors": {"aadhaar": problem}}), 400
+
+    # A real SMS needs a destination number; demo mode can run without one.
+    if sms_configured() and not PHONE_RE.match(phone):
+        return (
+            jsonify(
+                {
+                    "ok": False,
+                    "errors": {"phone": "Enter a valid 10-digit mobile number."},
+                }
+            ),
+            400,
+        )
 
     purge_expired_otps()
     sid = current_session_id()
@@ -309,16 +438,31 @@ def send_aadhaar_otp():
         "attempts": 0,
     }
 
-    send_otp_sms(aadhaar, otp)
+    delivered = send_otp_sms(phone, otp)
+
+    if sms_configured() and not delivered:
+        OTP_STORE.pop(sid, None)
+        return (
+            jsonify(
+                {
+                    "ok": False,
+                    "message": "We could not send the OTP SMS. Please try again.",
+                }
+            ),
+            502,
+        )
 
     response = {
         "ok": True,
         "request_id": request_id,
         "masked": mask_aadhaar(aadhaar),
+        "delivery": "sms" if delivered else "demo",
+        "phone_masked": f"+91 {phone[:2]}XXX XX{phone[-3:]}" if phone else "",
         "expires_in": OTP_TTL_SECONDS,
         "resend_in": OTP_RESEND_SECONDS,
     }
-    if AADHAAR_DEMO_MODE:
+
+    if not delivered and AADHAAR_DEMO_MODE:
         response["demo_otp"] = otp
 
     return jsonify(response)

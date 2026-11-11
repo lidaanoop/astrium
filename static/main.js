@@ -409,24 +409,28 @@
       const response = await fetch("/api/aadhaar/send-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ aadhaar: digits }),
+        body: JSON.stringify({
+          aadhaar: digits,
+          phone: fields.phone.value.replace(/\D/g, ""),
+        }),
       });
 
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok || !data.ok) {
-        const fieldError = data.errors && data.errors.aadhaar;
-        const message =
-          fieldError ||
-          data.message ||
-          "We could not send the OTP. Please try again.";
+        const fieldErrors = data.errors || {};
+        const errorKeys = Object.keys(fieldErrors);
 
-        if (fieldError) {
-          showError("aadhaar", fieldError);
-          setVerifyStatus(fieldError, "invalid");
+        if (errorKeys.length) {
+          errorKeys.forEach((key) => {
+            if (fields[key]) showError(key, fieldErrors[key]);
+            else showError("aadhaar", fieldErrors[key]);
+          });
+          setVerifyStatus(fieldErrors[errorKeys[0]], "invalid");
         } else {
+          const message =
+            data.message || "We could not send the OTP. Please try again.";
           setOtpStatus(message, "invalid");
-          // Never leave the Aadhaar row stuck on "Sending OTP…".
           setVerifyStatus(message, "invalid");
         }
 
@@ -446,22 +450,34 @@
       verifyOtpBtn.textContent = "Verify OTP";
       resendBtn.hidden = false;
 
-      setVerifyStatus(
-        `OTP sent to the mobile linked with ${data.masked || "Aadhaar"}`,
-        "valid"
-      );
+      const expiryMinutes = data.expires_in
+        ? Math.round(data.expires_in / 60)
+        : 5;
+
+      if (data.delivery === "sms") {
+        setVerifyStatus(
+          `OTP sent to ${data.phone_masked || `+91 ${digits.slice(-4)}`}`,
+          "valid"
+        );
+        if (otpHint) {
+          otpHint.textContent = `Valid for ${expiryMinutes} minutes. Check the SMS on your phone.`;
+        }
+        if (demoOtp) {
+          demoOtp.hidden = true;
+          demoOtp.textContent = "";
+        }
+      } else {
+        setVerifyStatus("Demo mode — no SMS is sent.", "");
+        if (otpHint) {
+          otpHint.textContent = `Valid for ${expiryMinutes} minutes. No SMS gateway is configured on this server, so the code is shown below.`;
+        }
+        if (data.demo_otp && demoOtp) {
+          demoOtp.hidden = false;
+          demoOtp.textContent = `Demo mode: your OTP is ${data.demo_otp}`;
+        }
+      }
+
       setOtpStatus("", "");
-
-      if (otpHint && data.expires_in) {
-        otpHint.textContent = `Valid for ${Math.round(
-          data.expires_in / 60
-        )} minutes. Sent to the mobile number registered with Aadhaar.`;
-      }
-
-      if (data.demo_otp && demoOtp) {
-        demoOtp.hidden = false;
-        demoOtp.textContent = `Demo mode: your OTP is ${data.demo_otp}`;
-      }
 
       startResendTimer(data.resend_in);
       otpInput.focus();

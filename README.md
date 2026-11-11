@@ -39,11 +39,41 @@ OTP issued in one session cannot be redeemed from another.
 
 ### Demo mode vs real SMS
 
-Out of the box `AADHAAR_DEMO_MODE` is on: the OTP is returned to the form and
-shown as a “Demo mode” hint so the flow can be tested without an SMS gateway.
-Set `AADHAAR_DEMO_MODE=0` in production and implement `send_otp_sms()` in
-`app.py` with a UIDAI-approved provider (Surepass, Karza, Digio, etc.), which
-delivers the OTP to the mobile number registered against the Aadhaar.
+The app ships without an SMS gateway, so **no SMS is sent** and the OTP is shown
+in the form as a “Demo mode” hint (and written to the server log). To deliver
+real OTPs set `SMS_PROVIDER` and that provider’s credentials before starting the
+app — the `/api/aadhaar/send-otp` endpoint then texts the code to the phone
+number entered in the form:
+
+```bash
+# India, cheapest and simplest
+export SMS_PROVIDER=fast2sms
+export FAST2SMS_API_KEY=your-key
+export SMS_SENDER_ID=ASTRIM
+
+# or MSG91 (needs a DLT-approved flow template whose variable is named OTP)
+export SMS_PROVIDER=msg91
+export MSG91_AUTH_KEY=your-key
+export MSG91_TEMPLATE_ID=your-template-id
+
+# or Twilio
+export SMS_PROVIDER=twilio
+export TWILIO_ACCOUNT_SID=ACxxxxxxxx
+export TWILIO_AUTH_TOKEN=your-token
+export TWILIO_FROM_NUMBER=+1xxxxxxxxxx
+```
+
+When a gateway is configured the response reports `delivery: "sms"`, and if the
+gateway rejects the message the endpoint returns `502` so the guest sees an error
+instead of waiting for a code that never arrives. Set `AADHAAR_DEMO_MODE=0` to
+stop the OTP being echoed back in demo mode.
+
+> These gateways send the OTP to the number typed into the form. A true
+> **UIDAI Aadhaar OTP** can only be delivered to the mobile registered against
+> the Aadhaar, which requires a UIDAI-approved AUA/ASA/KUA partner (Surepass,
+> Karza, Digio, Signzy, Sandbox). Swap the body of `send_otp_sms()` — and its
+> verification step — for that provider’s send/verify APIs when you have
+> credentials.
 
 OTP and verification state live in memory (`OTP_STORE`, `VERIFIED_STORE`); swap
 these for Redis or a database when running multiple workers.
