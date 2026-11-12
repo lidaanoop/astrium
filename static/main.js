@@ -245,7 +245,6 @@
   const otpInput = document.getElementById("checkin-otp");
   const otpStatus = document.getElementById("otp-status");
   const otpHint = document.getElementById("otp-hint");
-  const demoOtp = modal.querySelector("[data-demo-otp]");
   const verifyOtpBtn = document.getElementById("verify-otp");
   const resendBtn = document.getElementById("resend-otp");
 
@@ -371,10 +370,6 @@
       resendBtn.disabled = true;
       resendBtn.textContent = "Resend OTP in 30s";
     }
-    if (demoOtp) {
-      demoOtp.hidden = true;
-      demoOtp.textContent = "";
-    }
 
     setOtpStatus("", "");
     clearError("otp");
@@ -454,27 +449,12 @@
         ? Math.round(data.expires_in / 60)
         : 5;
 
-      if (data.delivery === "sms") {
-        setVerifyStatus(
-          `OTP sent to ${data.phone_masked || `+91 ${digits.slice(-4)}`}`,
-          "valid"
-        );
-        if (otpHint) {
-          otpHint.textContent = `Valid for ${expiryMinutes} minutes. Check the SMS on your phone.`;
-        }
-        if (demoOtp) {
-          demoOtp.hidden = true;
-          demoOtp.textContent = "";
-        }
-      } else {
-        setVerifyStatus("Demo mode — no SMS is sent.", "");
-        if (otpHint) {
-          otpHint.textContent = `Valid for ${expiryMinutes} minutes. No SMS gateway is configured on this server, so the code is shown below.`;
-        }
-        if (data.demo_otp && demoOtp) {
-          demoOtp.hidden = false;
-          demoOtp.textContent = `Demo mode: your OTP is ${data.demo_otp}`;
-        }
+      setVerifyStatus(
+        `OTP sent to ${data.phone_masked || `+91 ${digits.slice(-4)}`}`,
+        "valid"
+      );
+      if (otpHint) {
+        otpHint.textContent = `Valid for ${expiryMinutes} minutes. Check the SMS on your phone.`;
       }
 
       setOtpStatus("", "");
@@ -545,7 +525,6 @@
       verifyOtpBtn.disabled = true;
       verifyOtpBtn.textContent = "Verified";
       resendBtn.hidden = true;
-      if (demoOtp) demoOtp.hidden = true;
 
       stopResendTimer();
       setOtpStatus(

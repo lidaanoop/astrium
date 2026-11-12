@@ -37,18 +37,18 @@ Safeguards: OTP expires after 5 minutes, resend is throttled to one per 30
 seconds, five wrong attempts invalidate the code, codes are stored hashed, and an
 OTP issued in one session cannot be redeemed from another.
 
-### Demo mode vs real SMS
+### SMS gateway (required)
 
-The app ships without an SMS gateway, so **no SMS is sent** and the OTP is shown
-in the form as a “Demo mode” hint (and written to the server log). The server
-prints this at startup so the mode is never ambiguous:
+OTPs are **only** delivered by SMS — there is no demo mode. If no gateway is
+configured, `POST /api/aadhaar/send-otp` returns `503` and no code is issued, and
+the server logs a warning at startup:
 
 ```
-WARNING in app: Aadhaar OTP delivery is in DEMO mode: no SMS is sent. ...
+WARNING in app: Aadhaar OTP delivery is DISABLED: no SMS gateway configured. ...
 ```
 
-To deliver real OTPs, copy `.env.example` to `.env`, fill in a provider, and
-restart the app (`.env` is loaded automatically and is git-ignored):
+To enable it, copy `.env.example` to `.env`, fill in a provider, and restart the
+app (`.env` is loaded automatically and is git-ignored):
 
 ```ini
 # .env — Fast2SMS example
@@ -61,10 +61,8 @@ Also supported: `SMS_PROVIDER=msg91` (`MSG91_AUTH_KEY`, `MSG91_TEMPLATE_ID`) and
 `SMS_PROVIDER=twilio` (`TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`,
 `TWILIO_FROM_NUMBER`). Environment variables take precedence over `.env`.
 
-When a gateway is configured the response reports `delivery: "sms"`, and if the
-gateway rejects the message the endpoint returns `502` so the guest sees an error
-instead of waiting for a code that never arrives. Set `AADHAAR_DEMO_MODE=0` to
-stop the OTP being echoed back in demo mode.
+If the gateway rejects the message the endpoint returns `502` so the guest sees
+an error instead of waiting for a code that never arrives.
 
 > These gateways send the OTP to the number typed into the form. A true
 > **UIDAI Aadhaar OTP** can only be delivered to the mobile registered against

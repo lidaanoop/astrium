@@ -56,22 +56,15 @@ PHONE_RE = re.compile(r"^[6-9]\d{9}$")
 ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "admin")
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "astrium123")
 
-# Aadhaar OTP settings. Set AADHAAR_DEMO_MODE=0 once a real SMS/UIDAI gateway is
-# wired into send_otp_sms() — otherwise the OTP is echoed back to the form so the
-# flow can be tested without an SMS provider.
-AADHAAR_DEMO_MODE = os.environ.get("AADHAAR_DEMO_MODE", "1").strip().lower() not in {
-    "0",
-    "false",
-    "no",
-}
+# Aadhaar OTP settings.
 OTP_TTL_SECONDS = 300
 OTP_RESEND_SECONDS = 30
 OTP_MAX_ATTEMPTS = 5
 VERIFICATION_TTL_SECONDS = 1800
 
 # SMS delivery. Set SMS_PROVIDER to "fast2sms", "msg91" or "twilio" and provide
-# that provider's credentials; otherwise no SMS is sent and the OTP is shown in
-# the form (demo mode) and written to the server log.
+# that provider's credentials. Without a working gateway the OTP endpoints return
+# an error instead of issuing a code nobody can receive.
 SMS_PROVIDER = os.environ.get("SMS_PROVIDER", "").strip().lower()
 SMS_SENDER_ID = os.environ.get("SMS_SENDER_ID", "ASTRIM")
 
@@ -280,8 +273,9 @@ def send_otp_sms(phone: str, otp: str) -> bool:
     )
 
     if not sms_configured():
-        app.logger.warning(
-            "SMS gateway not configured - OTP for +91%s is %s (demo mode)", phone, otp
+        app.logger.error(
+            "OTP requested but no SMS gateway is configured (SMS_PROVIDER=%r)",
+            SMS_PROVIDER,
         )
         return False
 
@@ -423,8 +417,21 @@ def send_aadhaar_otp():
     if problem:
         return jsonify({"ok": False, "errors": {"aadhaar": problem}}), 400
 
-    # A real SMS needs a destination number; demo mode can run without one.
-    if sms_configured() and not PHONE_RE.match(phone):
+    if not sms_configured():
+        return (
+            jsonify(
+                {
+                    "ok": False,
+                    "message": (
+                        "OTP delivery is not configured. Add SMS gateway "
+                        "credentials to .env and restart the server."
+                    ),
+                }
+            ),
+            503,
+        )
+
+    if not PHONE_RE.match(phone):
         return (
             jsonify(
                 {
@@ -468,7 +475,7 @@ def send_aadhaar_otp():
 
     delivered = send_otp_sms(phone, otp)
 
-    if sms_configured() and not delivered:
+    if not delivered:
         OTP_STORE.pop(sid, None)
         return (
             jsonify(
@@ -480,20 +487,16 @@ def send_aadhaar_otp():
             502,
         )
 
-    response = {
-        "ok": True,
-        "request_id": request_id,
-        "masked": mask_aadhaar(aadhaar),
-        "delivery": "sms" if delivered else "demo",
-        "phone_masked": f"+91 {phone[:2]}XXX XX{phone[-3:]}" if phone else "",
-        "expires_in": OTP_TTL_SECONDS,
-        "resend_in": OTP_RESEND_SECONDS,
-    }
-
-    if not delivered and AADHAAR_DEMO_MODE:
-        response["demo_otp"] = otp
-
-    return jsonify(response)
+    return jsonify(
+        {
+            "ok": True,
+            "request_id": request_id,
+            "masked": mask_aadhaar(aadhaar),
+            "phone_masked": f"+91 {phone[:2]}XXX XX{phone[-3:]}",
+            "expires_in": OTP_TTL_SECONDS,
+            "resend_in": OTP_RESEND_SECONDS,
+        }
+    )
 
 
 @app.route("/api/aadhaar/verify-otp", methods=["POST"])
@@ -690,14 +693,13 @@ def admin_delete_checkin(reference: str):
 
 
 # Announce the OTP delivery mode at startup so it is obvious whether real SMS
-# will be sent or the code is only shown in the browser.
+# will be sent.
 if sms_configured():
     app.logger.info("Aadhaar OTP SMS delivery enabled via %s.", SMS_PROVIDER)
 else:
     app.logger.warning(
-        "Aadhaar OTP delivery is in DEMO mode: no SMS is sent. Add "
-        "SMS_PROVIDER and its credentials to .env (see .env.example) and "
-        "restart the server to text real OTPs."
+        "Aadhaar OTP delivery is DISABLED: no SMS gateway configured. OTP "
+        "requests will fail until SMS_PROVIDER credentials are set in .env."
     )
 
 

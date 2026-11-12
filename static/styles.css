@@ -1171,18 +1171,6 @@ body.modal-open {
   }
 }
 
-.otp-demo {
-  margin: 0;
-  padding: 9px 12px;
-  border-radius: 10px;
-  background: rgba(185, 139, 93, 0.18);
-  color: #7a5a35;
-  font-size: 0.82rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  overflow-wrap: anywhere;
-}
-
 .otp-meta {
   display: flex;
   align-items: center;
